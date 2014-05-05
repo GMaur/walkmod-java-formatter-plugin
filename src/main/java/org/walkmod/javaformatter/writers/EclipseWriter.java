@@ -156,25 +156,26 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 				int childSize = children.getLength();
 				for (int i = 0; i < childSize && loadProfile; i++) {
 					Node childNode = children.item(i);
-					if (childNode instanceof Element) {
-						Element child = (Element) childNode;
-						if ("profile".equals(child.getNodeName())) {
-							if (CODE_FORMATTER_PROFILE.equals(child
-									.getAttribute("kind"))) {
-								NodeList settings = child.getChildNodes();
-								int settingsSize = settings.getLength();
-								for (int j = 0; j < settingsSize; j++) {
-									Node settingNode = settings.item(j);
-									if (settingNode instanceof Element) {
-										Element setting = (Element) settingNode;
-										options.put("id",
-												setting.getAttribute("id"));
-										options.put("value",
-												setting.getAttribute("value"));
-									}
+					if (!(childNode instanceof Element)) {
+						continue;
+					}
+					Element child = (Element) childNode;
+					if ("profile".equals(child.getNodeName())) {
+						if (CODE_FORMATTER_PROFILE.equals(child
+								.getAttribute("kind"))) {
+							NodeList settings = child.getChildNodes();
+							int settingsSize = settings.getLength();
+							for (int j = 0; j < settingsSize; j++) {
+								Node settingNode = settings.item(j);
+								if (!(settingNode instanceof Element)) {
+									continue;
 								}
-								loadProfile = true;
+								Element setting = (Element) settingNode;
+								options.put("id", setting.getAttribute("id"));
+								options.put("value",
+										setting.getAttribute("value"));
 							}
+							loadProfile = true;
 						}
 					}
 				}
