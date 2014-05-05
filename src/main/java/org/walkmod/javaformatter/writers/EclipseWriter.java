@@ -171,9 +171,8 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 									continue;
 								}
 								Element setting = (Element) settingNode;
-								options.put("id", setting.getAttribute("id"));
-								options.put("value",
-										setting.getAttribute("value"));
+								copyProperty("id", options, setting);
+								copyProperty("value", options, setting);
 							}
 							loadProfile = true;
 						}
@@ -193,6 +192,10 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 				}
 			}
 		}
+	}
+
+	private void copyProperty(String propertyName, Map<String, String> options, Element setting) {
+		options.put(propertyName, setting.getAttribute(propertyName));
 	}
 
 	@Override
