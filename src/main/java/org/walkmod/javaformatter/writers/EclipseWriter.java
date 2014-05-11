@@ -17,6 +17,7 @@ package org.walkmod.javaformatter.writers;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -137,13 +138,7 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 		configInput = loader.getResourceAsStream(this.configFile);
 		try {
 			if (configInput == null) {
-				File file = new File(configFile);
-				if (file.exists()) {
-					configInput = new FileInputStream(file);
-				} else {
-					throw new WalkModException("Config file [" + configFile
-							+ "] cannot be found");
-				}
+				configInput = createConfigFileOrFail(configInput);
 			}
 			InputSource in = new InputSource(configInput);
 			in.setSystemId(configFile);
@@ -166,6 +161,18 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 				}
 			}
 		}
+	}
+
+	private InputStream createConfigFileOrFail(InputStream configInput)
+			throws FileNotFoundException {
+		File file = new File(configFile);
+		if (file.exists()) {
+			configInput = new FileInputStream(file);
+		} else {
+			throw new WalkModException("Config file [" + configFile
+					+ "] cannot be found");
+		}
+		return configInput;
 	}
 
 	private void processProfiles(Element profilesElem,
