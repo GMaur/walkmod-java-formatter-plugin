@@ -17,6 +17,7 @@ package org.walkmod.javaformatter.writers;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -29,7 +30,6 @@ import org.eclipse.jdt.core.ToolFactory;
 import org.eclipse.jdt.core.formatter.CodeFormatter;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.text.edits.TextEdit;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -71,29 +71,28 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 				log.debug("Eclipse formatter [ok]");
 			}
 		}
-		if (formatter != null) {
-			te = formatter.format(CodeFormatter.K_COMPILATION_UNIT, code, 0,
-					code.length(), 0, String.valueOf('\n'));
-			if (te == null) {
-				log.warn("The source cannot be formatted with the selected configuration. Applying a default formatting");
-				return code;
-
-			}
-			IDocument doc = new org.eclipse.jface.text.Document(code);
-			try {
-				te.apply(doc);
-			} catch (Exception e) {
-				throw new WalkModException(e);
-			}
-			String formattedCode = doc.get();
-			if (formattedCode == null || "".equals(formattedCode)) {
-				return code;
-			}
-			return formattedCode;
-		} else {
+		if (formatter == null) {
 			throw new WalkModException(
 					"Eclipse formatter cannot be initialized");
 		}
+		te = formatter.format(CodeFormatter.K_COMPILATION_UNIT, code, 0,
+				code.length(), 0, String.valueOf('\n'));
+		if (te == null) {
+			log.warn("The source cannot be formatted with the selected configuration. Applying a default formatting");
+			return code;
+
+		}
+		IDocument doc = new org.eclipse.jface.text.Document(code);
+		try {
+			te.apply(doc);
+		} catch (Exception e) {
+			throw new WalkModException(e);
+		}
+		String formattedCode = doc.get();
+		if (formattedCode == null || "".equals(formattedCode)) {
+			return code;
+		}
+		return formattedCode;
 	}
 
 	/**
@@ -137,47 +136,14 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 		configInput = loader.getResourceAsStream(this.configFile);
 		try {
 			if (configInput == null) {
-				File file = new File(configFile);
-				if (file.exists()) {
-					configInput = new FileInputStream(file);
-				} else {
-					throw new WalkModException("Config file [" + configFile
-							+ "] cannot be found");
-				}
+				configInput = createConfigFileOrFail(configInput);
 			}
 			InputSource in = new InputSource(configInput);
 			in.setSystemId(configFile);
-			Document doc = DomHelper.parse(in);
-			Element profilesElem = doc.getDocumentElement();
+			Element profilesElem = DomHelper.parse(in).getDocumentElement();
 			Map<String, String> options = new HashMap<String, String>();
 			if ("profiles".equals(profilesElem.getNodeName())) {
-				NodeList children = profilesElem.getChildNodes();
-				boolean loadProfile = false;
-				int childSize = children.getLength();
-				for (int i = 0; i < childSize && loadProfile; i++) {
-					Node childNode = children.item(i);
-					if (childNode instanceof Element) {
-						Element child = (Element) childNode;
-						if ("profile".equals(child.getNodeName())) {
-							if (CODE_FORMATTER_PROFILE.equals(child
-									.getAttribute("kind"))) {
-								NodeList settings = child.getChildNodes();
-								int settingsSize = settings.getLength();
-								for (int j = 0; j < settingsSize; j++) {
-									Node settingNode = settings.item(j);
-									if (settingNode instanceof Element) {
-										Element setting = (Element) settingNode;
-										options.put("id",
-												setting.getAttribute("id"));
-										options.put("value",
-												setting.getAttribute("value"));
-									}
-								}
-								loadProfile = true;
-							}
-						}
-					}
-				}
+				processProfiles(profilesElem, options);
 			}
 			return options;
 		} catch (Exception e) {
@@ -192,6 +158,53 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 				}
 			}
 		}
+	}
+
+	private InputStream createConfigFileOrFail(InputStream configInput)
+			throws FileNotFoundException {
+		File file = new File(configFile);
+		if (file.exists()) {
+			configInput = new FileInputStream(file);
+		} else {
+			throw new WalkModException("Config file [" + configFile
+					+ "] cannot be found");
+		}
+		return configInput;
+	}
+
+	private void processProfiles(Element profilesElem,
+			Map<String, String> options) {
+		NodeList children = profilesElem.getChildNodes();
+		boolean loadProfile = false;
+		int childSize = children.getLength();
+		for (int i = 0; i < childSize && loadProfile; i++) {
+			Node childNode = children.item(i);
+			if (!(childNode instanceof Element)) {
+				continue;
+			}
+			Element child = (Element) childNode;
+			if (!"profile".equals(child.getNodeName())) {
+				continue;
+			}
+			if (CODE_FORMATTER_PROFILE.equals(child.getAttribute("kind"))) {
+				NodeList settings = child.getChildNodes();
+				int settingsSize = settings.getLength();
+				for (int j = 0; j < settingsSize; j++) {
+					Node settingNode = settings.item(j);
+					if (!(settingNode instanceof Element)) {
+						continue;
+					}
+					Element setting = (Element) settingNode;
+					copyProperty("id", options, setting);
+					copyProperty("value", options, setting);
+				}
+				loadProfile = true;
+			}
+		}
+	}
+
+	private void copyProperty(String propertyName, Map<String, String> options, Element setting) {
+		options.put(propertyName, setting.getAttribute(propertyName));
 	}
 
 	@Override
