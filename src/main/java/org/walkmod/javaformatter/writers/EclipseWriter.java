@@ -151,33 +151,7 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 			Element profilesElem = doc.getDocumentElement();
 			Map<String, String> options = new HashMap<String, String>();
 			if ("profiles".equals(profilesElem.getNodeName())) {
-				NodeList children = profilesElem.getChildNodes();
-				boolean loadProfile = false;
-				int childSize = children.getLength();
-				for (int i = 0; i < childSize && loadProfile; i++) {
-					Node childNode = children.item(i);
-					if (!(childNode instanceof Element)) {
-						continue;
-					}
-					Element child = (Element) childNode;
-					if ("profile".equals(child.getNodeName())) {
-						if (CODE_FORMATTER_PROFILE.equals(child
-								.getAttribute("kind"))) {
-							NodeList settings = child.getChildNodes();
-							int settingsSize = settings.getLength();
-							for (int j = 0; j < settingsSize; j++) {
-								Node settingNode = settings.item(j);
-								if (!(settingNode instanceof Element)) {
-									continue;
-								}
-								Element setting = (Element) settingNode;
-								copyProperty("id", options, setting);
-								copyProperty("value", options, setting);
-							}
-							loadProfile = true;
-						}
-					}
-				}
+				processProfiles(profilesElem, options);
 			}
 			return options;
 		} catch (Exception e) {
@@ -189,6 +163,37 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 					configInput.close();
 				} catch (IOException e) {
 					throw new WalkModException(e);
+				}
+			}
+		}
+	}
+
+	private void processProfiles(Element profilesElem,
+			Map<String, String> options) {
+		NodeList children = profilesElem.getChildNodes();
+		boolean loadProfile = false;
+		int childSize = children.getLength();
+		for (int i = 0; i < childSize && loadProfile; i++) {
+			Node childNode = children.item(i);
+			if (!(childNode instanceof Element)) {
+				continue;
+			}
+			Element child = (Element) childNode;
+			if ("profile".equals(child.getNodeName())) {
+				if (CODE_FORMATTER_PROFILE.equals(child
+						.getAttribute("kind"))) {
+					NodeList settings = child.getChildNodes();
+					int settingsSize = settings.getLength();
+					for (int j = 0; j < settingsSize; j++) {
+						Node settingNode = settings.item(j);
+						if (!(settingNode instanceof Element)) {
+							continue;
+						}
+						Element setting = (Element) settingNode;
+						copyProperty("id", options, setting);
+						copyProperty("value", options, setting);
+					}
+					loadProfile = true;
 				}
 			}
 		}
