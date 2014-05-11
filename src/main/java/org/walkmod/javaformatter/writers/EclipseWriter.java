@@ -71,29 +71,28 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 				log.debug("Eclipse formatter [ok]");
 			}
 		}
-		if (formatter != null) {
-			te = formatter.format(CodeFormatter.K_COMPILATION_UNIT, code, 0,
-					code.length(), 0, String.valueOf('\n'));
-			if (te == null) {
-				log.warn("The source cannot be formatted with the selected configuration. Applying a default formatting");
-				return code;
-
-			}
-			IDocument doc = new org.eclipse.jface.text.Document(code);
-			try {
-				te.apply(doc);
-			} catch (Exception e) {
-				throw new WalkModException(e);
-			}
-			String formattedCode = doc.get();
-			if (formattedCode == null || "".equals(formattedCode)) {
-				return code;
-			}
-			return formattedCode;
-		} else {
+		if (formatter == null) {
 			throw new WalkModException(
 					"Eclipse formatter cannot be initialized");
 		}
+		te = formatter.format(CodeFormatter.K_COMPILATION_UNIT, code, 0,
+				code.length(), 0, String.valueOf('\n'));
+		if (te == null) {
+			log.warn("The source cannot be formatted with the selected configuration. Applying a default formatting");
+			return code;
+
+		}
+		IDocument doc = new org.eclipse.jface.text.Document(code);
+		try {
+			te.apply(doc);
+		} catch (Exception e) {
+			throw new WalkModException(e);
+		}
+		String formattedCode = doc.get();
+		if (formattedCode == null || "".equals(formattedCode)) {
+			return code;
+		}
+		return formattedCode;
 	}
 
 	/**
