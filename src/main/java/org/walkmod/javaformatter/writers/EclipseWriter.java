@@ -30,7 +30,6 @@ import org.eclipse.jdt.core.ToolFactory;
 import org.eclipse.jdt.core.formatter.CodeFormatter;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.text.edits.TextEdit;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -142,8 +141,7 @@ public class EclipseWriter extends AbstractFileWriter implements ChainWriter {
 			}
 			InputSource in = new InputSource(configInput);
 			in.setSystemId(configFile);
-			Document doc = DomHelper.parse(in);
-			Element profilesElem = doc.getDocumentElement();
+			Element profilesElem = DomHelper.parse(in).getDocumentElement();
 			Map<String, String> options = new HashMap<String, String>();
 			if ("profiles".equals(profilesElem.getNodeName())) {
 				processProfiles(profilesElem, options);
